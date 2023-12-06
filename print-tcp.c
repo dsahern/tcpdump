@@ -66,6 +66,8 @@ static int tcp_verify_signature(netdissect_options *ndo,
 static void print_tcp_rst_data(netdissect_options *, const u_char *sp, u_int length);
 static void print_tcp_fastopen_option(netdissect_options *ndo, const u_char *cp,
                                       u_int datalen);
+static void print_tcp_bth_option(netdissect_options *ndo, const u_char *cp,
+                                 u_int datalen);
 
 #define MAX_RST_DATA_LEN	30
 
@@ -667,7 +669,10 @@ tcp_print(netdissect_options *ndo,
                                         ND_PRINT("tfo");
                                         print_tcp_fastopen_option(ndo, cp + 2, datalen - 2);
                                         break;
-
+                                case 0xefab:
+                                        ND_PRINT("bth");
+                                        print_tcp_bth_option(ndo, cp + 2, datalen - 2);
+                                        break;
                                 default:
                                         /* Unknown magic number */
                                         ND_PRINT("%04x", magic);
@@ -860,6 +865,44 @@ print_tcp_rst_data(netdissect_options *ndo,
         ND_PRINT(" ");
         (void)nd_printn(ndo, sp, length, ndo->ndo_snapend);
         ND_PRINT("]");
+}
+
+static void
+print_tcp_bth_option(netdissect_options *ndo, const u_char *cp,
+                     u_int datalen)
+{
+        u_int i;
+
+        if (datalen < 20) {
+                nd_print_invalid(ndo);
+        } else {
+		u_int val;
+		u_char flags;
+
+		/* first byte is version and flags */
+		flags = *cp;
+		ND_PRINT("  flags %x rtr %d rtrack %d ",
+			 flags, !!(flags & 0x20), !!(flags & 0x10));
+		cp++;
+		/* second byte is opcode */
+                ND_PRINT(" opcode %x ", *cp);
+		cp++;
+		/* bytes 3-4 are MSN in network order */
+                ND_PRINT(" msn %u ", GET_BE_U_2(cp));
+		cp += 2;
+
+		val = GET_BE_U_4(cp);
+		cp += 4;
+                ND_PRINT(" seg %u ", (val & 0xFF) >> 24);
+                ND_PRINT(" mbo %u ", val & 0xFFFFFF);
+
+		/* skip icrc for now */
+		cp += 4;
+
+                ND_PRINT(" tstamp %u ", GET_BE_U_4(cp));
+		cp += 4;
+                ND_PRINT(" tstamp_echo %u", GET_BE_U_4(cp));
+        }
 }
 
 static void
