@@ -359,18 +359,17 @@ ip_print(netdissect_options *ndo,
 		ND_PRINT("truncated-ip - %u bytes missing! ",
 			len - length);
 	if (len < hlen) {
-#ifdef GUESS_TSO
-            if (len) {
-                ND_PRINT("bad-len %u", len);
-                return;
-            } else {
-                /* we guess that it is a TSO send */
+            if (!len && ndo->ndo_tso_pkt) {
                 len = length;
+            } else {
+                if (len) {
+                    ND_PRINT("bad-len %u", len);
+                    return;
+                } else {
+                    /* we guess that it is a TSO send */
+                    len = length;
+                }
             }
-#else
-            ND_PRINT("bad-len %u", len);
-            return;
-#endif /* GUESS_TSO */
 	}
 
 	/*

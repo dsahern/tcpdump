@@ -460,6 +460,9 @@ ether_if_print(netdissect_options *ndo, const struct pcap_pkthdr *h,
 	       const u_char *p)
 {
 	ndo->ndo_protocol = "ether";
+#ifdef PCAP_PKT_GSO_TCP
+	ndo->ndo_tso_pkt = !!(h->flags & PCAP_PKT_GSO_TCP);
+#endif
 	ndo->ndo_ll_hdr_len +=
 		ether_print(ndo, p, h->len, h->caplen, NULL, NULL);
 }

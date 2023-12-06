@@ -228,6 +228,7 @@ struct netdissect_options {
 
   int   ndo_packettype;	/* as specified by -T */
 
+  int   ndo_tso_pkt;    /* packet is TSO packet */
   int   ndo_snaplen;
   int   ndo_ll_hdr_len;	/* link-layer header length */
 
